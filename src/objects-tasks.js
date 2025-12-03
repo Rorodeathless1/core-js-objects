@@ -393,32 +393,95 @@ function group(array, keySelector, valueSelector) {
  */
 
 const cssSelectorBuilder = {
-  element(/* value */) {
-    throw new Error('Not implemented');
+  selector: '',
+  rightOrder: [
+    'element',
+    'id',
+    'class',
+    'attr',
+    'pseudoClass',
+    'pseudoElement',
+  ],
+  onceOrder: [0, 1, 5],
+  order: -1,
+  usedOnce: [],
+
+  element(value) {
+    const newBuilder = Object.create(this);
+    return newBuilder.validateAndAddValue('element', `${value}`);
   },
 
-  id(/* value */) {
-    throw new Error('Not implemented');
+  id(value) {
+    const newBuilder = Object.create(this);
+    return newBuilder.validateAndAddValue('id', `#${value}`);
   },
 
-  class(/* value */) {
-    throw new Error('Not implemented');
+  class(value) {
+    const newBuilder = Object.create(this);
+    return newBuilder.validateAndAddValue('class', `.${value}`);
   },
 
-  attr(/* value */) {
-    throw new Error('Not implemented');
+  attr(value) {
+    const newBuilder = Object.create(this);
+    return newBuilder.validateAndAddValue('attr', `[${value}]`);
   },
 
-  pseudoClass(/* value */) {
-    throw new Error('Not implemented');
+  pseudoClass(value) {
+    const newBuilder = Object.create(this);
+    return newBuilder.validateAndAddValue('pseudoClass', `:${value}`);
   },
 
-  pseudoElement(/* value */) {
-    throw new Error('Not implemented');
+  pseudoElement(value) {
+    const newBuilder = Object.create(this);
+    return newBuilder.validateAndAddValue('pseudoElement', `::${value}`);
   },
 
-  combine(/* selector1, combinator, selector2 */) {
-    throw new Error('Not implemented');
+  combine(selector1, combinator, selector2) {
+    const obj = Object.create(this);
+    obj.selector = `${selector1.stringify()} ${combinator} ${selector2.stringify()}`;
+    obj.order = -1;
+    obj.usedOnce = [];
+    return obj;
+  },
+
+  stringify() {
+    return this.selector;
+  },
+
+  validateAndAddValue(selectorType, value) {
+    let index;
+    this.rightOrder.forEach((item, i) => {
+      if (item === selectorType) {
+        index = i;
+      }
+    });
+
+    if (this.order > index) {
+      throw Error(
+        'Selector parts should be arranged in the following order: element, id, class, attribute, pseudo-class, pseudo-element'
+      );
+    }
+
+    if (
+      this.onceOrder.includes(index) &&
+      this.usedOnce.includes(selectorType)
+    ) {
+      throw Error(
+        'Element, id and pseudo-element should not occur more than one time inside the selector'
+      );
+    }
+
+    const obj = Object.create(this);
+    obj.selector = this.selector + value;
+    obj.order = index;
+
+    if (this.onceOrder.includes(index)) {
+      obj.usedOnce = [...this.usedOnce, selectorType];
+    } else {
+      obj.usedOnce = [...this.usedOnce];
+    }
+
+    return obj;
   },
 };
 
